@@ -110,16 +110,17 @@ def parse_date(date_str, row_number):
 
 def validate_phone(phone_raw, row_number):
     if not phone_raw or str(phone_raw).strip() == "":
-        log(f"  Row {row_number}: Phone number is empty skipping.")
+        log(f"  Row {row_number}: Phone empty skipping.")
         return None
     phone = str(phone_raw).strip().replace(" ", "").replace("-", "").replace("'", "")
+    log(f"  Row {row_number}: Raw phone after clean = {phone}")
     if not phone.startswith("+"):
         phone = "+" + phone
+    log(f"  Row {row_number}: Final phone = {phone}")
     digits = phone[1:]
     if not digits.isdigit() or len(digits) < 10:
-        log(f"  Row {row_number}: Phone {phone} looks invalid.")
+        log(f"  Row {row_number}: Phone {phone} invalid.")
         return None
-    log(f"  Row {row_number}: Phone validated: {phone}")
     return phone
 
 
