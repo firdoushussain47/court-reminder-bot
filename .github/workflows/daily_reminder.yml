@@ -1,3 +1,31 @@
-.github/
-  workflows/
-    daily_reminder.yml
+name: Court Hearing Reminder
+
+on:
+  schedule:
+    - cron: "30 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install gspread google-auth twilio
+
+      - name: Run court reminder script
+        env:
+          TWILIO_ACCOUNT_SID:     ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN:      ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_FROM_NUMBER:     ${{ secrets.TWILIO_FROM_NUMBER }}
+          GOOGLE_CREDENTIALS_B64: ${{ secrets.GOOGLE_CREDENTIALS_B64 }}
+          SHEET_NAME:             ${{ secrets.SHEET_NAME }}
+          WORKSHEET_NAME:         ${{ secrets.WORKSHEET_NAME }}
+        run: python court_reminder.py
