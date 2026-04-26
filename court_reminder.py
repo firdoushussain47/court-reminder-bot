@@ -146,7 +146,7 @@ def mark_reminder_sent(worksheet, data_row_index, headers):
 
 def main():
     log("=" * 55)
-    log("  COURT HEARING REMINDER — Starting")
+    log("  COURT HEARING REMINDER v2 — Starting")
     log("=" * 55)
 
     today    = datetime.now().date()
