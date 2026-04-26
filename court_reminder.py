@@ -121,9 +121,8 @@ def parse_date(date_str, row_number):
 
 
 def validate_phone(phone_raw, row_number):
-    if not phone_raw or str(phone_raw).strip() == "":
-        log(f"  Row {row_number}: Phone number is empty — skipping.")
-        return None
+    if not phone.startswith("+"):
+    phone = "+" + phone
     phone = str(phone_raw).strip().replace(" ", "").replace("-", "").replace("'", "")
     if not phone.startswith("+"):
         log(f"  Row {row_number}: Phone '{phone}' must start with '+'. Example: +919876543210")
