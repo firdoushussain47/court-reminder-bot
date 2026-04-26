@@ -4,7 +4,7 @@ from google.oauth2.service_account import Credentials
 from twilio.rest import Client
 from datetime import datetime
 import json
-import base64
+import base64f
 import os
 
 # ─────────────────────────────────────────────
@@ -85,7 +85,7 @@ st.markdown("---")
 # ─────────────────────────────────────────────
 page = st.sidebar.radio(
     "Navigation",
-    ["➕ Add Client", "🔍 Search & Remind"]
+    ["📊 Dashboard", "➕ Add Client", "🔍 Search & Remind"]
 )
 
 worksheet = connect_to_sheet()
@@ -95,10 +95,91 @@ if not worksheet:
 # ─────────────────────────────────────────────
 #   PAGE 1 — ADD CLIENT
 # ─────────────────────────────────────────────
-if page == "➕ Add Client":
-    st.header("➕ Add New Client")
-    st.markdown("Fill in the details below to add a new client.")
+# ─────────────────────────────────────────────
+#   PAGE 0 — DASHBOARD
+# ─────────────────────────────────────────────
+if page == "📊 Dashboard":
+    st.header("📊 Hearing Dashboard")
 
+    from datetime import timedelta
+    today    = datetime.now().date()
+    tomorrow = today + timedelta(days=1)
+    week_end = today + timedelta(days=7)
+
+    all_records = worksheet.get_all_records()
+
+    tomorrow_cases = []
+    week_cases     = []
+
+    for record in all_records:
+        date_str = str(record.get(COL_NEXT_DATE, "")).strip()
+        if not date_str:
+            continue
+        try:
+            hearing_date = datetime.strptime(date_str, DATE_FORMAT).date()
+        except:
+            continue
+
+        if hearing_date == tomorrow:
+            tomorrow_cases.append(record)
+        elif today < hearing_date <= week_end:
+            week_cases.append(record)
+
+    # ── Tomorrow ──
+    st.subheader(f"⚠️ Tomorrow's Hearings — {tomorrow.strftime(DATE_FORMAT)}")
+    if not tomorrow_cases:
+        st.success("No hearings tomorrow!")
+    else:
+        for record in tomorrow_cases:
+            with st.container():
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.markdown(f"**👤 {record.get(COL_NAME)}**")
+                with col2:
+                    st.markdown(f"📁 {record.get(COL_CASE)}")
+                with col3:
+                    st.markdown(f"📱 {record.get(COL_PHONE)}")
+
+                reminder = record.get(COL_REMINDER_SENT, "NO")
+                if reminder == "YES":
+                    st.success("✅ Reminder already sent")
+                else:
+                    if st.button(f"📲 Send Reminder to {record.get(COL_NAME)}", key=f"dash_{record.get(COL_CASE)}"):
+                        phone = str(record.get(COL_PHONE, ""))
+                        name  = str(record.get(COL_NAME, ""))
+                        case  = str(record.get(COL_CASE, ""))
+                        next_date = str(record.get(COL_NEXT_DATE, ""))
+                        with st.spinner("Sending..."):
+                            success, result = send_whatsapp(phone, name, case, next_date)
+                        if success:
+                            st.success(f"✅ Reminder sent to {name}!")
+                            headers = worksheet.row_values(1)
+                            all_rows = worksheet.get_all_values()
+                            for i, row in enumerate(all_rows):
+                                if row[2] == case:
+                                    col_index = headers.index(COL_REMINDER_SENT) + 1
+                                    worksheet.update_cell(i + 1, col_index, "YES")
+                                    break
+                        else:
+                            st.error(f"❌ Failed: {result}")
+                st.markdown("---")
+
+    # ── This Week ──
+    st.subheader(f"📆 This Week's Hearings — Next 7 Days")
+    if not week_cases:
+        st.info("No other hearings this week!")
+    else:
+        for record in week_cases:
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.markdown(f"**👤 {record.get(COL_NAME)}**")
+            with col2:
+                st.markdown(f"📁 {record.get(COL_CASE)}")
+            with col3:
+                st.markdown(f"📅 {record.get(COL_NEXT_DATE)}")
+            with col4:
+                st.markdown(f"📱 {record.get(COL_PHONE)}")
+            st.markdown("---")
     with st.form("add_client_form"):
         name      = st.text_input("Client Name *")
         phone     = st.text_input("Phone Number *", placeholder="919876543210")
