@@ -124,7 +124,7 @@ def validate_phone(phone_raw, row_number):
     if not phone_raw or str(phone_raw).strip() == "":
         log(f"  Row {row_number}: Phone number is empty — skipping.")
         return None
-    phone = str(phone_raw).strip().replace(" ", "").replace("-", "")
+    phone = str(phone_raw).strip().replace(" ", "").replace("-", "").replace("'", "")
     if not phone.startswith("+"):
         log(f"  Row {row_number}: Phone '{phone}' must start with '+'. Example: +919876543210")
         return None
