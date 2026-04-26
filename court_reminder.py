@@ -14,10 +14,6 @@ import os
 import json
 import base64
 
-# ─────────────────────────────────────────────────────────
-#   CONFIGURATION — These values come from GitHub Secrets
-# ─────────────────────────────────────────────────────────
-
 TWILIO_ACCOUNT_SID  = os.environ.get("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN   = os.environ.get("TWILIO_AUTH_TOKEN")
 TWILIO_FROM_NUMBER  = os.environ.get("TWILIO_FROM_NUMBER", "whatsapp:+14155238886")
@@ -60,7 +56,6 @@ def connect_to_google_sheets():
         return worksheet
     except gspread.exceptions.SpreadsheetNotFound:
         log(f"ERROR: Sheet '{SHEET_NAME}' not found.")
-        log("Make sure the sheet is shared with your service account email.")
         return None
     except Exception as e:
         log(f"ERROR connecting to Google Sheets: {e}")
@@ -103,7 +98,7 @@ def send_whatsapp_message(twilio_client, phone, name, case, next_date_str, row_n
         elif "21211" in error_str:
             log(f"  Row {row_number}: ❌ Invalid phone number: {phone}")
         elif "20003" in error_str:
-            log(f"  Row {row_number}: ❌ Twilio authentication failed. Check SID and Token.")
+            log(f"  Row {row_number}: ❌ Twilio authentication failed.")
         else:
             log(f"  Row {row_number}: ❌ Failed to send to {phone}: {error_str}")
         return False
@@ -121,16 +116,19 @@ def parse_date(date_str, row_number):
 
 
 def validate_phone(phone_raw, row_number):
-    if not phone.startswith("+"):
-    phone = "+" + phone
-    phone = str(phone_raw).strip().replace(" ", "").replace("-", "").replace("'", "")
-    if not phone.startswith("+"):
-        log(f"  Row {row_number}: Phone '{phone}' must start with '+'. Example: +919876543210")
+    if not phone_raw or str(phone_raw).strip() == "":
+        log(f"  Row {row_number}: Phone number is empty — skipping.")
         return None
+    # Clean the number — remove spaces, dashes, apostrophes
+    phone = str(phone_raw).strip().replace(" ", "").replace("-", "").replace("'", "")
+    # Auto add + if missing (Google Sheets removes it)
+    if not phone.startswith("+"):
+        phone = "+" + phone
     digits = phone[1:]
     if not digits.isdigit() or len(digits) < 10:
         log(f"  Row {row_number}: Phone '{phone}' looks invalid.")
         return None
+    log(f"  Row {row_number}: Phone validated: {phone}")
     return phone
 
 
